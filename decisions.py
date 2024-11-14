@@ -32,8 +32,11 @@ class decision_maker(Node):
         self.reachThreshold=0.01
 
 
-        # TODO Part 3: use the Kalman Filter
-        self.localizer=localization(...)
+        # DONE Part 3: use the Kalman Filter
+        rawSensors=0
+        kalmanFilter=1
+        # Using defualt headers
+        self.localizer=localization(type=1, dt=0.1, loggerName="EKF.csv")
         
         if motion_type==POINT_PLANNER:
             self.controller=controller(klp=0.2, klv=0.5, kap=0.8, kav=0.6)      
