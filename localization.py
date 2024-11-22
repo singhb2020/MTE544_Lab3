@@ -22,10 +22,11 @@ import message_filters
 rawSensors=0
 kalmanFilter=1
 odom_qos=QoSProfile(reliability=2, durability=2, history=1, depth=10)
+imu_qos=QoSProfile(reliability=2, durability=2, history=1, depth=10)
 
 class localization(Node):
     
-    def __init__(self, type, dt, loggerName="robotPose.csv", loggerHeaders=["imu_ax", "imu_ay", "kf_ax", "kf_ay","kf_vx","kf_w","kf_x", "kf_y","stamp"]):
+    def __init__(self, type, dt, loggerName="robotPose.csv", loggerHeaders=["imu_ax", "imu_ay", "kf_ax", "kf_ay","kf_vx","kf_w","kf_x", "kf_y", "odom_x", "odom_y", "stamp"]):
 
         super().__init__("localizer")
 
@@ -51,10 +52,10 @@ class localization(Node):
         x= np.array([0, 0, 0, 0, 0, 0])
         
         # Me modify the scaling of Q to test
-        Q= 0.5 * np.eye(6)
+        Q= 1 * np.eye(6)
 
         # Modify the scaling of R to test
-        R= 0.5 * np.eye(4)
+        R= 1 * np.eye(4)
         
         # The initial P isn't crucial to get right, the algorithmn should correct
         P= np.eye(6) # initial covariance
@@ -66,7 +67,7 @@ class localization(Node):
         self.odom_sub.registerCallback(self.odom_callback) # Must setup callback
         
         # Does not need individual data processing, so no seperate imu_callback
-        self.imu_sub=message_filters.Subscriber(self, Imu, '/imu')
+        self.imu_sub=message_filters.Subscriber(self, Imu, '/imu', qos_profile=imu_qos)
         
         # Combine the msg's and pass them into a combined callback
         time_syncher=message_filters.ApproximateTimeSynchronizer([self.odom_sub, self.imu_sub], queue_size=10, slop=0.1)
@@ -104,19 +105,25 @@ class localization(Node):
         xhat=self.kf.get_states()
 
         # Update the pose estimate to be returned by getPose
-        self.pose=np.array(xhat)
+        self.pose=np.array([xhat[0],
+                            xhat[1],
+                            xhat[2],
+                            odom_msg.header.stamp
+                            ])
 
         # DONE Part 4: log your data
         # self.pose = [x, y, th, w, v, vdot]
         self.loc_logger.log_values([
             ax, # imu_ax
             ay, # imu_ay
-            self.pose[5], # kf_ax
-            self.pose[4] * self.pose[3], # kf_ay
-            self.pose[4], # kf_vx
-            self.pose[3], # kf_w
-            self.pose[0], # kf_x
-            self.pose[1], # kf_y
+            xhat[5], # kf_ax
+            xhat[4] * xhat[3], # kf_ay
+            xhat[4], # kf_vx
+            xhat[3], # kf_w
+            xhat[0], # kf_x
+            xhat[1], # kf_y
+            odom_msg.pose.pose.position.x, # odom_x
+            odom_msg.pose.pose.position.y, # odom_y
             Time.from_msg(imu_msg.header.stamp).nanoseconds # stamp
         ])
       
