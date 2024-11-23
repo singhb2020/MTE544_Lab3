@@ -33,8 +33,9 @@ csv_files = glob.glob(os.path.join(relative_folder_path, "*.csv"))
 RMSEs = []
 names = []
 for csv_file in csv_files:
-    if "point" in csv_file:
-        print(f"File: {csv_file.replace('./data/point_EKF_', '')}")
+    thing_to_try = "spiral"
+    if thing_to_try in csv_file:
+        print(f"File: {csv_file.replace(f'./data/{thing_to_try}_EKF_', '')}")
         headers, values = FileReader(csv_file).read_file()
         RMSEs.append(calculate_RMSE(values, headers))
         names.append(csv_file)
